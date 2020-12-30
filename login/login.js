@@ -42,7 +42,7 @@ import * as msal from "msal";
     userAgentApp.handleRedirectCallback(authCallback);
 
     const request = {
-      scopes: ["user.read", "files.read.all"]
+      scopes: ["user.read", "user.read.all"]
     };
 
     if (localStorage.getItem("loggedIn") === "yes") {

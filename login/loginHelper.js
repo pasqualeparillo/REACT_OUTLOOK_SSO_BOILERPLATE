@@ -1,10 +1,12 @@
+import axios from "axios";
+
 let loginDialog = Office.Dialog;
 const dialogLoginUrl =
   location.protocol + "//" + location.hostname + (location.port ? ":" + location.port : "") + "/login/login.html";
 
-export const signInO365 = async displayError => {
+export const signInO365 = async (displayError, setState) => {
   console.log({ authStatus: "loginInProcess" });
-
+  setState({ authStatus: "loginInProcess" });
   await Office.context.ui.displayDialogAsync(dialogLoginUrl, { height: 80, width: 30 }, result => {
     if (result.status === Office.AsyncResultStatus.Failed) {
       displayError(`${result.error.code} ${result.error.message}`);
@@ -16,16 +18,15 @@ export const signInO365 = async displayError => {
   });
 
   async function processLoginMessage(arg) {
-    console.log("Message received in processMessage: " + JSON.stringify(arg));
     let messageFromDialog = JSON.parse(arg.message);
-    console.log(messageFromDialog.result);
+    setState(messageFromDialog.result);
     if (messageFromDialog.status === "success") {
       // We now have a valid access token.
       loginDialog.close();
-      console.log(JSON.stringify(messageFromDialog.result));
-
-      const response = await sso.makeGraphApiCall(messageFromDialog.result);
-      documentHelper.writeDataToOfficeDocument(response);
+      let response = getGraphToken("https://graph.microsoft.com/v1.0/me/", messageFromDialog.result);
+      console.log(response);
+      //const response = await sso.makeGraphApiCall(messageFromDialog.result);
+      // console.log(JSON.stringify(response));
     } else {
       // Something went wrong with authentication or the authorization of the web application.
       loginDialog.close();
@@ -37,6 +38,15 @@ export const signInO365 = async displayError => {
     console.log(JSON.stringify(arg) + " processed");
     processDialogEvent(arg);
   };
+};
+
+export const getGraphToken = async (url, accesstoken) => {
+  const response = await axios({
+    url: url,
+    method: "get",
+    headers: { Authorization: `Bearer ${accesstoken}` }
+  });
+  return response;
 };
 
 const processDialogEvent = (arg, displayError) => {
